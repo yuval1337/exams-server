@@ -19,23 +19,23 @@ app.use(
 );
 
 app.post(
-  "/api/auth/login",
+  "/exams/login",
   controller.login,
 );
 
 app.post(
-  "/api/auth/register",
+  "/exams/register",
   controller.register,
 );
 
 app.get(
-  "/api/data/exams/fetch-all",
+  "/exams/fetch",
   middleware.verify_jwt,
   controller.fetch_all_exams,
 );
 
 app.post(
-  "/api/data/exams/add",
+  "/exams/add",
   middleware.verify_jwt,
   middleware.verify_bearer_is_lecturer,
   controller.add_exams

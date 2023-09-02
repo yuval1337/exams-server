@@ -10,32 +10,34 @@ import * as consts from "./consts.js"
 
 export async function register(req, res) {
   try {
-    var user_type = "student";
-    const { username, password, firstname, surname, invitecode } = req.body
-    if (invitecode === process.env.INVITE_CODE) {
-      user_type = "lecturer";
+    var privilege = "student";
+    const { username, password, first_name, surname, invite_code } = req.body
+    if (invite_code === process.env.INVITE_CODE) {
+      privilege = "lecturer";
     }
-    else if (invitecode !== undefined) {
+    else if (invite_code !== undefined) {
       return res.status(409).send("User registration failed: invalid invite code");
     }
 
-    const user_doc = await crud.read_one(model.User, { username });
+    const [user_doc] = await crud.read(model.User, { username });
 
     if (!user_doc) {
       const hashed_password = await bcrypt.hash(password, consts.BCRYPT_ROUNDS);
-      await crud.create_one(
+      await crud.create(
         model.User,
-        {
-          username,
-          firstname,
-          surname,
-          password: hashed_password,
-          type: user_type
-        });
+        [
+          {
+            username,
+            first_name,
+            surname,
+            privilege,
+            password: hashed_password
+          }
+        ],
+      )
       return res.status(200).send("User registration successful");
     }
     return res.status(409).send(`User registration failed: username "${username}" is taken`);
-
   }
   catch (err) {
     console.error(err);
@@ -46,7 +48,7 @@ export async function register(req, res) {
 export async function login(req, res) {
   try {
     const { username, password } = req.body;
-    const user_doc = await crud.read_one(model.User, { username });
+    const [user_doc] = await crud.read(model.User, { username });
 
     if (user_doc) {
       const match = await bcrypt.compare(password, user_doc.password);
@@ -70,15 +72,14 @@ export async function login(req, res) {
 export async function fetch_all_exams(req, res) {
   try {
     // find out which exams are assigned to the user
-    const _id = req.jwt.id
-    const user_doc = await crud.read_one(model.User, { _id });
-    const exam_ids = user_doc.exams
-    if (exam_ids.length < 1) {
-      return res.status(404).send("User has no associated exams")
+    const _id = req.jwt._id
+    const user_doc = await crud.read(model.User, { _id });
+    const exam_ids = user_doc[0].exams
+    var exams = []
+    if (exam_ids.length > 1) {
+      // fetch all those exams
+      exams = await crud.read(model.Exam, { _id: { $in: exam_ids } })
     }
-
-    // fetch all those exams
-    const exams = await crud.read_many(model.Exam, { id: { $in: exam_ids } })
     return res.status(200).json({ exams })
   }
   catch (err) {
@@ -89,26 +90,21 @@ export async function fetch_all_exams(req, res) {
 
 export async function add_exams(req, res) {
   try {
-    var result
     const exams = JSON.parse(req.body.exams)
-    const exam_names = exams.map(exam => exam.name)
 
-    result = crud.read_many(model.Exam, { name: in exam_names }) // need to modify this
+    // update existing docs / create new docs.
+    const results = await crud.update_or_create(
+      model.Exam,
+      exams,
+      "name"
+    )
 
-    // exams.map(exam => {
-    //   if ()
-    // })
-
-    // // add the exams to the "exams" collection.
-    // // save an array of the created exam ids.
-    // const exam_ids = []
-    // result = await crud.create_many(model.Exam, exams)
-    // console.log(result)
-
-    // exams.map(exam => exam_ids.push(exam._id))
-
-    // //   update the existing doc with the created array
-    // await crud.update(model.User, req.jwt._id, { exams: exam_ids })
+    // update the user's (that performed the action) exams' doc _id.
+    await crud.update(
+      model.User,
+      req.jwt._id,
+      { exams: results.map(doc => doc._id) }
+    )
 
     return res.sendStatus(200)
   }

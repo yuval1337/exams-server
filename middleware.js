@@ -36,8 +36,14 @@ export function verify_jwt(req, res, next) {
 
 export async function verify_bearer_is_lecturer(req, res, next) {
   try {
-    const user_doc = await crud.read_one(model.User, { username: req.jwt.username, type: "lecturer" })
-    if (!user_doc) {
+    const query = await crud.read(
+      model.User,
+      {
+        username: req.jwt.username,
+        type: "lecturer"
+      }
+    )
+    if (query.length === 0) {
       throw `no lecturer named "${req.jwt.username}"`
     }
     next();
