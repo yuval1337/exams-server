@@ -1,6 +1,7 @@
 import mongoose from "mongoose"
 
-export const Submission = mongoose.model(
+
+const Submission = mongoose.model(
   "Submission",
   mongoose.Schema(
     {
@@ -20,14 +21,15 @@ export const Submission = mongoose.model(
   )
 )
 
-export const User = mongoose.model(
+const User = mongoose.model(
   "User",
   mongoose.Schema(
     {
       username: String, // unique across the collection, lowercase only
-      password: String, // hashed
+      password: String, // hashed password
+      firstName: String, // display name
+      lastName: String, // display name
       privilege: String, // student / lecturer / administrator
-      first_name: String, last_name: String, // display name
       exams: [String],
       submissions: [String]
     }
@@ -35,13 +37,13 @@ export const User = mongoose.model(
 )
 
 
-export const Exam = mongoose.model(
+const Exam = mongoose.model(
   "Exam",
   mongoose.Schema(
     {
       name: String,
-      lecturer_firstname: String,
-      lecturer_surname: String,
+      lecturerFirstName: String,
+      lecturerLastName: String,
       start: Date,
       duration: Number,
       shuffle: Boolean,
@@ -58,3 +60,10 @@ export const Exam = mongoose.model(
     }
   )
 )
+
+
+export const models = {
+  Submission,
+  User,
+  Exam
+}

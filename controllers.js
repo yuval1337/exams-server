@@ -1,115 +1,141 @@
-import dotenv from "dotenv"; dotenv.config();
-import bcrypt from "bcrypt";
-import * as model from "./models.js";
-import * as crud from "./crud.js";
-import * as jwt_funcs from "./jwt_funcs.js";
+import dotenv from "dotenv"
+import bcrypt from "bcrypt"
+
+import { models } from "./models.js"
+import { crud } from "./crud.js"
+import { jwtFuncs } from "./jwt.js"
+import { logger } from "./logger.js"
 import * as consts from "./consts.js"
 
+dotenv.config()
 
 
-
-export async function register(req, res) {
+const register = async (req, res) => {
+  var msg
   try {
     var privilege = "student";
-    const { username, password, first_name, surname, invite_code } = req.body
-    if (invite_code === process.env.INVITE_CODE) {
+    const { username, password, firstName, lastName, inviteCode } = req.body
+    if (inviteCode === process.env.INVITE_CODE) {
       privilege = "lecturer";
     }
-    else if (invite_code !== undefined) {
-      return res.status(409).send("User registration failed: invalid invite code");
+    else if (inviteCode !== undefined) {
+      msg = "User registration failed: invalid invite code."
+      return res.status(409).send(msg);
     }
 
-    const [user_doc] = await crud.read(model.User, { username });
+    const [userDoc] = await crud.read(models.User, { username });
 
-    if (!user_doc) {
-      const hashed_password = await bcrypt.hash(password, consts.BCRYPT_ROUNDS);
+    if (!userDoc) {
+      const hashedPass = await bcrypt.hash(password, consts.BCRYPT_ROUNDS);
       await crud.create(
-        model.User,
+        models.User,
         [
           {
             username,
-            first_name,
-            surname,
+            password: hashedPass,
+            firstName,
+            lastName,
             privilege,
-            password: hashed_password
           }
         ],
       )
-      return res.status(200).send("User registration successful");
+      msg = "User registration successful."
+      logger.info(msg)
+      return res.status(200).send(msg)
     }
-    return res.status(409).send(`User registration failed: username "${username}" is taken`);
+    msg = `User registration failed: username "${username}" is taken`
+    logger.error(msg)
+    return res.status(409).send(msg)
   }
   catch (err) {
-    console.error(err);
-    res.sendStatus(500);
-  }
-}
-
-export async function login(req, res) {
-  try {
-    const { username, password } = req.body;
-    const [user_doc] = await crud.read(model.User, { username });
-
-    if (user_doc) {
-      const match = await bcrypt.compare(password, user_doc.password);
-
-      if (match) {
-        return res.status(200).json({
-          message: "User login successful",
-          jwt: jwt_funcs.generate(user_doc)
-        });
-      }
-    }
-
-    return res.status(401).send("Login failed: invalid credentials");
-  }
-  catch (err) {
-    console.error(err);
-    return res.sendStatus(500);
-  }
-}
-
-export async function fetch_all_exams(req, res) {
-  try {
-    // find out which exams are assigned to the user
-    const _id = req.jwt._id
-    const user_doc = await crud.read(model.User, { _id });
-    const exam_ids = user_doc[0].exams
-    var exams = []
-    if (exam_ids.length > 1) {
-      // fetch all those exams
-      exams = await crud.read(model.Exam, { _id: { $in: exam_ids } })
-    }
-    return res.status(200).json({ exams })
-  }
-  catch (err) {
-    console.error(err)
+    msg = "User registration failed: " + err
+    logger.error(msg)
     res.sendStatus(500)
   }
 }
 
-export async function add_exams(req, res) {
+const login = async (req, res) => {
+  var msg
+  try {
+    const { username, password } = req.body
+    const [userDoc] = await crud.read(models.User, { username })
+
+    if (userDoc) {
+      const match = await bcrypt.compare(password, userDoc.password);
+      const signInConfig = jwtFuncs.generate(userDoc)
+      if (match) {
+        msg = "User login successful."
+        logger.info(msg)
+        return res.status(200).send(signInConfig)
+      };
+    }
+    msg = "User login failed: invalid credentials."
+    logger.error(msg)
+    return res.status(401).send(msg)
+  }
+  catch (err) {
+    msg = "User login failed: " + err
+    logger.error(msg)
+    return res.sendStatus(500)
+  }
+}
+
+const fetchExams = async (req, res) => {
+  var msg
+  try {
+    // find out which exams are assigned to the user
+    const _id = req.jwt._id
+    const userDoc = await crud.read(models.User, { _id });
+    const examIds = userDoc[0].exams
+    var exams = []
+    if (examIds.length > 1) {
+      // fetch all those exams
+      exams = await crud.read(models.Exam, { _id: { $in: examIds } })
+    }
+    msg = "Fetch exams successful."
+    logger.info(msg)
+    return res.status(200).json({ exams })
+  }
+  catch (err) {
+    msg = "Fetch exams failed:\n" + err
+    logger.error(msg)
+    res.sendStatus(500)
+  }
+}
+
+const addExams = async (req, res) => {
+  var msg
   try {
     const exams = JSON.parse(req.body.exams)
 
     // update existing docs / create new docs.
-    const results = await crud.update_or_create(
-      model.Exam,
+    const results = await crud.updateOrCreate(
+      models.Exam,
       exams,
       "name"
     )
 
     // update the user's (that performed the action) exams' doc _id.
     await crud.update(
-      model.User,
+      models.User,
       req.jwt._id,
       { exams: results.map(doc => doc._id) }
     )
-
-    return res.sendStatus(200)
+    msg = "Adding exams successful."
+    logger.info(msg)
+    return res.status(200).send(msg)
   }
   catch (err) {
-    console.error(err)
+    msg = "Adding exams failed:\n" + err
+    logger.error(msg)
     return res.sendStatus(500)
   }
+}
+
+
+export const controllers = {
+  register,
+  login,
+  fetchExams,
+  addExams
 }

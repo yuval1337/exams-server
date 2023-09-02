@@ -1,58 +1,67 @@
 import mongoose from "mongoose";
-import * as jwt_funcs from "./jwt_funcs.js"
-import * as model from "./models.js"
-import * as crud from "./crud.js"
+
+import { jwtFuncs } from "./jwt.js"
+import { models } from "./models.js"
+import { crud } from "./crud.js"
+import { logger } from "./logger.js"
 import * as consts from "./consts.js"
 
 
-
-export async function mongo_connect(req, res, next) {
+const mongoConnect = async (req, res, next) => {
   try {
-    await mongoose.connect(consts.MONGO_URI);
-    next();
-  } catch (err) {
-    console.error(err);
-    res.sendStatus(500);
+    await mongoose.connect(consts.MONGO_URI)
+    next()
+  }
+  catch (err) {
+    logger.error("Connecting to Mongo via mongoose failed:" + err)
+    res.sendStatus(500)
   }
 }
 
-export function verify_jwt(req, res, next) {
-  const auth_header = req.header("Authorization");
-
-  if (!auth_header || auth_header === "") {
-    return res.status(401).send("Authentication failed: check auth header");
-  }
-
-  const token = auth_header.replace("Bearer ", "")
-
+const verifyToken = (req, res, next) => {
   try {
-    req.jwt = jwt_funcs.verify_and_parse(token)
-    next();
-  } catch (err) {
-    console.error(err);
-    return res.status(401).send("Authentication failed: invalid token");
+    const authHeader = req.header("Authorization");
+    if (!authHeader || authHeader === "") {
+      return res.status(401).send("Authentication failed: check auth header");
+    }
+    const token = authHeader.replace("Bearer ", "")
+    req.jwt = jwtFuncs.parse(token)
+    next()
+  }
+  catch (err) {
+    var msg = "Authentication failed: invalid token"
+    logger.error(msg)
+    return res.status(401).send(msg)
   }
 }
 
-export async function verify_bearer_is_lecturer(req, res, next) {
+const verifyBearerPrivilege = async (req, res, next) => {
+  var msg
   try {
     const query = await crud.read(
-      model.User,
+      models.User,
       {
         username: req.jwt.username,
-        type: "lecturer"
+        privilege: "lecturer"
       }
     )
     if (query.length === 0) {
-      throw `no lecturer named "${req.jwt.username}"`
+      msg = "Authentication failed: insufficient permissions."
+      logger.error(msg)
+      return res.status(403).send(msg)
     }
-    next();
-  } catch (err) {
-    console.error(err);
-    return res.status(403).send("Authentication failed: no permissions");
+    next()
+  }
+  catch (err) {
+    msg = "Authentication failed:" + err
+    logger.error(msg)
+    return res.sendStatus(500)
   }
 }
 
-export async function success(message) {
-  res.status(200).send(message)
+
+export const middleware = {
+  mongoConnect,
+  verifyToken,
+  verifyBearerPrivilege
 }

@@ -1,9 +1,9 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv"; dotenv.config()
 
-export function generate(user_doc, expiresIn = 300) {
-  const { username, display_name } = user_doc
-  const _id = user_doc.id.toString()
+const generate = (userDoc, expiresIn = 300) => {
+  const { username, firstName, lastName, privilege } = userDoc
+  const _id = userDoc.id.toString()
 
   const payload = {
     _id,
@@ -20,7 +20,8 @@ export function generate(user_doc, expiresIn = 300) {
 
   const authState = {
     username,
-    display_name,
+    firstName,
+    lastName,
     privilege,
   }
 
@@ -32,6 +33,11 @@ export function generate(user_doc, expiresIn = 300) {
   }
 }
 
-export function verify_and_parse(token) {
+const parse = (token) => {
   return jwt.verify(token, process.env.JWT_SECRET)
+}
+
+export const jwtFuncs = {
+  generate,
+  parse
 }

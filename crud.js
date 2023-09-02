@@ -1,15 +1,14 @@
-export async function create(model, array_of_objects) {
+const create = async (model, arrayOfObjects) => {
   try {
-    const results = await model.insertMany(array_of_objects)
-    return results;
+    const results = await model.insertMany(arrayOfObjects)
+    return results
   }
   catch (err) {
     throw err
   }
 }
 
-
-export async function read(model, filter) {
+const read = async (model, filter) => {
   try {
     const result = await model.find(filter)
     return result
@@ -19,12 +18,11 @@ export async function read(model, filter) {
   }
 }
 
-
-export async function update(model, _id, keys_and_values) {
+const update = async (model, _id, keysAndValues) => {
   try {
     const result = await model.findByIdAndUpdate(
       _id,
-      { $set: { ...keys_and_values } },
+      { $set: { ...keysAndValues } },
       { new: true }
     )
     return result
@@ -34,39 +32,37 @@ export async function update(model, _id, keys_and_values) {
   }
 }
 
-
-export async function update_or_create(model, array_of_objects, key) {
+const updateOrCreate = async (model, arrayOfObjects, key) => {
   try {
     // find any existing docs that correspond with argument "key"
-    const docs = await model.find({ [key]: { $in: array_of_objects.map(obj => obj[key]) } });
+    const docs = await model.find({ [key]: { $in: arrayOfObjects.map(obj => obj[key]) } })
 
     // an array of docs, will be returned
     const results = []
 
     // for each object of the argument array, either update its doc or create a new one for it.
-    await Promise.all(array_of_objects.map(async obj => {
-      const doc = docs.find(item => obj[key] === item[key]);
+    await Promise.all(arrayOfObjects.map(async obj => {
+      const doc = docs.find(item => obj[key] === item[key])
       var result
       if (doc) {
         // doc already exists, update it
-        result = await update(model, doc._id, obj);
+        result = await update(model, doc._id, obj)
       } else {
         // create a new doc
-        result = await create(model, [obj]);
+        result = await create(model, [obj])
       }
       // update the results array
       results.push(result)
-    }));
+    }))
 
-    return results;
+    return results
   }
   catch (err) {
-    throw err;
+    throw err
   }
 }
 
-
-export async function del(model, _id) {
+const deleteOne = async (model, _id) => {
   try {
     const result = await model.findByIdAndDelete(_id)
     return result
@@ -74,4 +70,13 @@ export async function del(model, _id) {
   catch (err) {
     throw err
   }
+}
+
+
+export const crud = {
+  create,
+  read,
+  update,
+  updateOrCreate,
+  deleteOne
 }
