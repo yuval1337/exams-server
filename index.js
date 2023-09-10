@@ -1,7 +1,6 @@
-import express from "express";
-import { upload } from "./multer.js";
-import { controllers } from "./controllers.js";
-import { middleware } from "./middleware.js";
+import express from "express"
+import { default as controllers } from "./controllers.js"
+import { default as middleware } from "./middleware.js"
 
 
 const app = express();
@@ -9,31 +8,45 @@ const PORT = 8080;
 
 app.listen(PORT);
 
+const SERVICE = "exams-app-backend"
+
 app.use(
   express.json(),
-  upload.none(),
   middleware.mongoConnect,
-);
+)
 
 app.post(
-  "/exams/login",
+  `/${SERVICE}/login`,
   controllers.login,
-);
+)
 
 app.post(
-  "/exams/register",
+  `/${SERVICE}/register`,
   controllers.register,
-);
+)
 
 app.get(
-  "/exams/fetch",
+  `/${SERVICE}/get-exams`,
   middleware.verifyToken,
-  controllers.fetchExams,
-);
+  controllers.getExams,
+)
 
 app.post(
-  "/exams/add",
+  `/${SERVICE}/post-exam`,
   middleware.verifyToken,
   middleware.verifyBearerPrivilege,
-  controllers.addExams
-);
+  controllers.addExam
+)
+
+app.post(
+  `/${SERVICE}/post-submission`,
+  middleware.verifyToken,
+  // middleware.verifyTime,
+  controllers.addSubmission
+)
+
+app.get(
+  `/${SERVICE}/get-submissions`,
+  middleware.verifyToken,
+  controllers.getSubmissions
+)

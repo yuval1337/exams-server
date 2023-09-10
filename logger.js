@@ -10,7 +10,7 @@ const error = (msg) => {
 }
 
 
-export const logger = {
+export default {
   info,
   error
 }

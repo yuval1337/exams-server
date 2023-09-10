@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
-import { jwtFuncs } from "./jwt.js"
-import { models } from "./models.js"
-import { crud } from "./crud.js"
-import { logger } from "./logger.js"
+import { default as jwtFuncs } from "./jwtFuncs.js"
+import { default as model } from "./models.js"
+import { default as myMongoose } from "./mongooseFuncs.js"
+import { default as logger } from "./logger.js"
 import * as consts from "./consts.js"
 
 
@@ -13,7 +13,7 @@ const mongoConnect = async (req, res, next) => {
     next()
   }
   catch (err) {
-    logger.error("Connecting to Mongo via mongoose failed:" + err)
+    logger.error("Connecting to Mongo via mongoose.js failed:" + err)
     res.sendStatus(500)
   }
 }
@@ -22,7 +22,7 @@ const verifyToken = (req, res, next) => {
   try {
     const authHeader = req.header("Authorization");
     if (!authHeader || authHeader === "") {
-      return res.status(401).send("Authentication failed: check auth header");
+      return res.status(401).send("Authentication failed: Check authentication header.");
     }
     const token = authHeader.replace("Bearer ", "")
     req.jwt = jwtFuncs.parse(token)
@@ -38,30 +38,24 @@ const verifyToken = (req, res, next) => {
 const verifyBearerPrivilege = async (req, res, next) => {
   var msg
   try {
-    const query = await crud.read(
-      models.User,
-      {
-        username: req.jwt.username,
-        privilege: "lecturer"
-      }
-    )
-    if (query.length === 0) {
-      msg = "Authentication failed: insufficient permissions."
+    if (req.jwt.privilege !== "lecturer") {
+      msg = "Authentication failed: not a privileged user."
       logger.error(msg)
       return res.status(403).send(msg)
     }
     next()
   }
   catch (err) {
-    msg = "Authentication failed:" + err
+    msg = `Authentication failed: ${err}`
     logger.error(msg)
     return res.sendStatus(500)
   }
 }
 
-
-export const middleware = {
+const middleware = {
   mongoConnect,
   verifyToken,
   verifyBearerPrivilege
 }
+
+export default middleware

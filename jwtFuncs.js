@@ -1,9 +1,11 @@
-import jwt from "jsonwebtoken";
-import dotenv from "dotenv"; dotenv.config()
+import jwt from "jsonwebtoken"
+import dotenv from "dotenv"
+
+dotenv.config()
+
 
 const generate = (userDoc, expiresIn = 300) => {
-  const { username, firstName, lastName, privilege } = userDoc
-  const _id = userDoc.id.toString()
+  const { _id, username, firstName, lastName, privilege } = userDoc
 
   const payload = {
     _id,
@@ -37,7 +39,7 @@ const parse = (token) => {
   return jwt.verify(token, process.env.JWT_SECRET)
 }
 
-export const jwtFuncs = {
+export default {
   generate,
   parse
 }
