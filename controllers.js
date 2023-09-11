@@ -14,17 +14,16 @@ dotenv.config()
 const register = async (req, res) => {
   var msg
   try {
-    var privilege = "student";
+    var privilege = "student"
     const { username, password, firstName, lastName, inviteCode } = req.body
 
-    // register as lecturer
-    if (inviteCode) {
+    if (inviteCode) { // Register as lecturer
       if (inviteCode === process.env.INVITE_CODE) {
-        privilege = "lecturer";
+        privilege = "lecturer"
       }
       else {
         msg = "User registration failed: invalid invite code."
-        return res.status(401).send(msg);
+        return res.status(401).send(msg)
       }
     }
 
@@ -36,19 +35,15 @@ const register = async (req, res) => {
       return res.status(409).send(msg)
     }
     else {
-      const hashedPass = await bcrypt.hash(password, consts.BCRYPT_ROUNDS);
-      await mongooseFuncs.create(
-        models.User,
-        [
-          {
-            username,
-            password: hashedPass,
-            firstName,
-            lastName,
-            privilege,
-          }
-        ],
-      )
+      const hashedPass = await bcrypt.hash(password, consts.BCRYPT_ROUNDS)
+      const mongoResponse = await models.User({
+        username,
+        password: hashedPass,
+        firstName,
+        lastName,
+        privilege,
+      }).save()
+      console.log(mongoResponse)
       msg = "User registration successful."
       logger.info(msg)
       return res.status(200).send(msg)
@@ -77,11 +72,9 @@ const login = async (req, res) => {
         return res.status(200).send(signInConfig)
       }
     }
-    else {
-      msg = "User login failed: Invalid credentials."
-      logger.error(msg)
-      return res.status(401).send(msg)
-    }
+    msg = "User login failed: Invalid credentials."
+    logger.error(msg)
+    return res.status(401).send("invalid credentials")
   }
   catch (err) {
     msg = `User login failed:\n${err}`
@@ -257,12 +250,51 @@ const getSubmissions = async (req, res) => {
   }
 }
 
+const deleteExam = async (req, res) => {
+  try {
+    const { examId } = req.body
+    const deleteResult = await models.Exam.findOneAndDelete({ id: examId })
 
-export default {
+    if (deleteResult) {
+      console.log("exam deletion successful")
+      return res.status(200).send("exam deletion successful")
+    }
+    else {
+      console.warning("exam deletion failed: exam was not found.")
+      return res.status(404).send("exam deletion failed")
+    }
+  }
+  catch (err) {
+    console.error(
+      "exam deletion failed",
+      err
+    )
+    res.sendStatus(500)
+  }
+}
+
+const updateExam = async (req, res) => {
+  const { exam } = req.body
+  const updateResult = await models.Exam.findOneAndUpdate({ id: exam.id }, exam)
+  if (updateResult) {
+    console.log("exam updating successful")
+    return res.status(200).send("exam deletion successful")
+  }
+  else {
+    console.warning("exam updating failed: exam was not found")
+    return res.status(404).send("exam deletion failed")
+  }
+}
+
+const controllers = {
   register,
   login,
   getExams,
   addExam,
+  deleteExam,
   addSubmission,
-  getSubmissions
+  getSubmissions,
+  updateExam
 }
+
+export default controllers

@@ -50,3 +50,17 @@ app.get(
   middleware.verifyToken,
   controllers.getSubmissions
 )
+
+app.post(
+  `/${SERVICE}/delete-exam`,
+  middleware.verifyToken,
+  middleware.verifyBearerPrivilege,
+  controllers.deleteExam
+)
+
+app.post(
+  `/${SERVICE}/update-exam`,
+  middleware.verifyToken,
+  middleware.verifyBearerPrivilege,
+  controllers.updateExam
+)

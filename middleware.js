@@ -20,18 +20,20 @@ const mongoConnect = async (req, res, next) => {
 
 const verifyToken = (req, res, next) => {
   try {
-    const authHeader = req.header("Authorization");
+    const authHeader = req.header("Authorization")
     if (!authHeader || authHeader === "") {
-      return res.status(401).send("Authentication failed: Check authentication header.");
+      return res.status(401).send("authentication failed: check authentication header")
     }
     const token = authHeader.replace("Bearer ", "")
     req.jwt = jwtFuncs.parse(token)
     next()
   }
   catch (err) {
-    var msg = "Authentication failed: invalid token"
-    logger.error(msg)
-    return res.status(401).send(msg)
+    console.error(
+      "authentication failed: invalid token",
+      err
+    )
+    return res.status(401).send("authentication failed: invalid token")
   }
 }
 
