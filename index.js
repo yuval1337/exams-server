@@ -1,66 +1,75 @@
 import express from "express"
-import { default as controllers } from "./controllers.js"
-import { default as middleware } from "./middleware.js"
+import { default as controller } from "./controller/index.js"
+import { default as middleware } from "./middleware/index.js"
 
-
-const app = express();
-const PORT = 8080;
-
-app.listen(PORT);
-
+const app = express()
+const PORT = 8080
 const SERVICE = "exams-app-backend"
+
+
+app.listen(PORT, () => console.log(`app listening on port ${PORT}`))
 
 app.use(
   express.json(),
-  middleware.mongoConnect,
+  middleware.db.connectToDb,
 )
 
+// open endpoints
 app.post(
   `/${SERVICE}/login`,
-  controllers.login,
+  controller.auth.login,
 )
 
 app.post(
   `/${SERVICE}/register`,
-  controllers.register,
+  controller.auth.register,
+)
+
+
+// jwt endpoints
+app.use(
+  `/${SERVICE}/jwt-any/*`,
+  middleware.auth.verifyJwtAll,
 )
 
 app.get(
-  `/${SERVICE}/get-exams`,
-  middleware.verifyToken,
-  controllers.getExams,
-)
-
-app.post(
-  `/${SERVICE}/post-exam`,
-  middleware.verifyToken,
-  middleware.verifyBearerPrivilege,
-  controllers.addExam
-)
-
-app.post(
-  `/${SERVICE}/post-submission`,
-  middleware.verifyToken,
-  // middleware.verifyTime,
-  controllers.addSubmission
+  `/${SERVICE}/jwt-any/get-all-exams`,
+  controller.db.getAllExams
 )
 
 app.get(
-  `/${SERVICE}/get-submissions`,
-  middleware.verifyToken,
-  controllers.getSubmissions
+  `/${SERVICE}/jwt-any/get-submissions`,
+  controller.db.getAllSubmissions
 )
 
 app.post(
-  `/${SERVICE}/delete-exam`,
-  middleware.verifyToken,
-  middleware.verifyBearerPrivilege,
-  controllers.deleteExam
+  `/${SERVICE}/jwt-any/post-submission`,
+  controller.db.addSubmission
+)
+
+
+// jwt AND lecturer endpoints
+app.use(
+  `/${SERVICE}/jwt-lecturer/*`,
+  middleware.auth.verifyJwtLecturer,
+)
+
+app.get(
+  `/${SERVICE}/jwt-lecturer/get-authored-exams`,
+  controller.db.getUserExams,
 )
 
 app.post(
-  `/${SERVICE}/update-exam`,
-  middleware.verifyToken,
-  middleware.verifyBearerPrivilege,
-  controllers.updateExam
+  `/${SERVICE}/jwt-lecturer/post-exam`,
+  controller.db.addExam
+)
+
+app.post(
+  `/${SERVICE}/jwt-lecturer/delete-exam`,
+  controller.db.deleteExam
+)
+
+app.post(
+  `/${SERVICE}/jwt-lecturer/update-exam`,
+  controller.db.updateExam
 )

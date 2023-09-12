@@ -34,11 +34,13 @@ const Exam = mongoose.model(
   "Exam",
   mongoose.Schema({
     id: String,
-    name: String,
+    author: String, // username
+    name: String, // exam's display name
     lecturerFirstName: String,
     lecturerLastName: String,
     start: Date,
     duration: Number,
+    end: Date,
     shuffle: Boolean,
     questions: [{
       id: String,
@@ -49,7 +51,8 @@ const Exam = mongoose.model(
       answers: [{ id: String, answer: String }],
       correctAnswer: String, // answer id
       shuffle: Boolean
-    }]
+    }],
+    modifiable: Boolean
   }
   )
 )
