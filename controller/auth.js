@@ -58,7 +58,7 @@ const login = async (req, res) => {
       throw "incorrect password"
     }
 
-    const signInConfig = jwt.getSigninConfig(userDoc, 1800)
+    const signInConfig = jwt.getSigninConfig(userDoc, 60 * 60 * 4) // 4 hours
     return res.status(200).send(signInConfig)
   }
   catch (err) {

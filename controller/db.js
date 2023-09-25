@@ -155,7 +155,7 @@ const getAllSubmissions = async (req, res) => {
       return augmentedSubmission
     })
 
-    console.info("getting user submissions failed")
+    console.info("getting user submissions successful")
     return res.status(200).json(augmentedSubmissions)
   }
   catch (err) {

@@ -21,7 +21,7 @@ const getSigninConfig = (userDoc, expiresIn) => {
   const token = jwt.sign(
     { username, privilege },
     process.env.JWT_SECRET,
-    { expiresIn: `${expiresIn}m` }
+    { expiresIn }
   )
 
   return {
